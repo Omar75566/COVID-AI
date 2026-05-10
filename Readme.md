@@ -1,6 +1,6 @@
-# Chest X-Ray Classifier
+# 🫁 Chest X-Ray Classifier
 
-A full-stack AI web application that classifies chest X-ray images as **Normal** or **Pneumonia** using Transfer Learning with MobileNetV2.
+A full-stack AI web application that classifies chest X-ray images as **Normal** or **Pneumonia** using Transfer Learning with MobileNetV2 — trained, deployed, and production-ready.
 
 > ⚠️ For educational purposes only. Not a substitute for professional medical diagnosis.
 
@@ -8,8 +8,10 @@ A full-stack AI web application that classifies chest X-ray images as **Normal**
 
 ## 🔴 Live Demo
 
-- **Frontend:** [xray-classifier.vercel.app](https://xray-classifier.vercel.app) ← update this
-- **API:** [xray-api.up.railway.app](https://xray-api.up.railway.app) ← update this
+| | Link |
+|---|---|
+| **Frontend** | [covid-ai.vercel.app](https://covid-ai.vercel.app) |
+| **API** | [omar75566-xray-classifier-api.hf.space/docs](https://omar75566-xray-classifier-api.hf.space/docs) |
 
 ---
 
@@ -23,40 +25,28 @@ A full-stack AI web application that classifies chest X-ray images as **Normal**
 | PNEUMONIA Precision | 1.00 |
 | PNEUMONIA Recall | 0.95 |
 | Training Epochs | 22 (early stopping) |
-
-
----
-
-## 🧠 Model Architecture
-
-- **Base Model:** MobileNetV2 pretrained on ImageNet (frozen weights)
-- **Input Size:** 128×128 RGB
-- **Preprocessing:** Rescaling to [-1, 1] range (built into model)
-- **Custom Head:** GlobalAveragePooling2D → Dropout(0.2) → Dense(1, sigmoid)
-- **Optimizer:** Adam (lr=0.001, β1=0.9, β2=0.999)
-- **Loss:** Binary Crossentropy
-
-**Data Augmentation (built into model):**
-- RandomRotation (±5%)
-- RandomZoom (10%)
-- RandomTranslation (10%)
-- RandomContrast (10%)
-
-**Callbacks:**
-- ModelCheckpoint (save best val_loss)
-- ReduceLROnPlateau (factor=0.5, patience=5)
-- EarlyStopping (patience=5)
+| Best Checkpoint | Epoch 17 |
 
 ---
 
-## 📁 Dataset
+## 🧠 How It Works
 
-- **Source:** [COVID-19 X-Ray Dataset](https://www.kaggle.com/datasets/khoongweihao/covid19-xray-dataset-train-test-sets)
-- **Classes:** NORMAL (0), PNEUMONIA (1)
-- **Train:** 119 images (80/20 split)
-- **Validation:** 29 images
-- **Test:** 40 images
-- **Class Balance:** Perfectly balanced (50/50)
+```
+Upload X-Ray
+     ↓
+Convert to RGB + Resize to 128×128
+     ↓
+Feed raw pixels [0-255] to model
+     ↓
+Model rescales internally to [-1, 1]
+     ↓
+MobileNetV2 feature extraction (frozen ImageNet weights)
+     ↓
+GlobalAveragePooling → Dropout(0.2) → Dense(1, sigmoid)
+     ↓
+score ≥ 0.5 → PNEUMONIA
+score < 0.5 → NORMAL
+```
 
 ---
 
@@ -64,36 +54,34 @@ A full-stack AI web application that classifies chest X-ray images as **Normal**
 
 | Layer | Technology |
 |-------|-----------|
-| Model | TensorFlow/Keras · MobileNetV2 |
-| Backend | FastAPI · Python |
+| Model | TensorFlow 2.19 · Keras 3.10 · MobileNetV2 |
+| Backend | FastAPI · Python 3.11 · Uvicorn |
 | Frontend | React · TypeScript · Vite · Tailwind CSS |
 | Containerization | Docker · Docker Compose |
-| Backend Deploy | Railway |
-| Frontend Deploy | Vercel |
+| Backend Deploy | Hugging Face Spaces (free) |
+| Frontend Deploy | Vercel (free) |
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
 ```
 COVID-AI/
 ├── backend/
 │   ├── main.py              # FastAPI app + /predict endpoint
-│   ├── requirements.txt     # Python dependencies
+│   ├── requirements.txt
 │   ├── Dockerfile
 │   └── model/
-│       └── model.mobilenet_v2.keras   # ← model weights (not in git)
+│       └── model.mobilenet_v2.keras
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx          # Main UI component
+│   │   ├── App.tsx          # Main UI — upload, predict, display result
 │   │   └── index.css        # Tailwind directives
 │   ├── tailwind.config.js
 │   ├── postcss.config.js
 │   ├── vite.config.ts
-│   ├── Dockerfile
-│   └── .env                 # VITE_API_URL (not in git)
+│   └── Dockerfile
 ├── docker-compose.yml
-├── .gitignore
 └── README.md
 ```
 
@@ -112,18 +100,17 @@ COVID-AI/
 # Backend
 cd backend
 pip install -r requirements.txt
-# Place model.mobilenet_v2.keras in backend/model/
 uvicorn main:app --reload
-# Runs on http://localhost:8000
+# → http://localhost:8000
 
-# Frontend (new terminal)
+# Frontend
 cd frontend
 npm install
 npm run dev
-# Runs on http://localhost:5173
+# → http://localhost:5173
 ```
 
-### With Docker
+### With Docker Compose
 
 ```bash
 docker-compose up --build
@@ -133,12 +120,11 @@ docker-compose up --build
 
 ---
 
-## 🔌 API
+## 🔌 API Reference
 
 ### `GET /`
 Health check
 
-**Response:**
 ```json
 {
   "status": "ok",
@@ -147,9 +133,8 @@ Health check
 ```
 
 ### `POST /predict`
-Classify a chest X-ray image
 
-**Request:** `multipart/form-data` with `file` field (PNG, JPG, WEBP — max 5MB)
+**Request:** `multipart/form-data` with `file` field (PNG · JPG · WEBP · max 5MB)
 
 **Response:**
 ```json
@@ -161,73 +146,47 @@ Classify a chest X-ray image
 }
 ```
 
-**Error responses:**
-- `400` — Invalid file type or corrupted image
-- `413` — File too large (>5MB)
-- `503` — Model not loaded
+**Error codes:** `400` invalid file · `413` too large · `503` model not loaded
 
 ---
 
-## ⚙️ Environment Variables
+## 🧪 Model Details
 
-**Frontend (`.env`):**
-```
-VITE_API_URL=http://localhost:8000
-```
+**Architecture:**
+- Base: MobileNetV2 pretrained on ImageNet (weights frozen)
+- Custom head: GlobalAveragePooling2D → Dropout(0.2) → Dense(1, sigmoid)
+- Preprocessing built into model: Rescaling to [-1, 1]
 
-**Backend (Railway dashboard):**
-```
-ALLOWED_ORIGINS=https://your-app.vercel.app
-```
+**Training:**
+- Optimizer: Adam (lr=0.001, β1=0.9, β2=0.999)
+- Loss: Binary Crossentropy
+- Callbacks: ModelCheckpoint + ReduceLROnPlateau + EarlyStopping (patience=5)
 
----
+**Augmentation (built into model):**
+- RandomRotation ±5%
+- RandomZoom 10%
+- RandomTranslation 10%
+- RandomContrast 10%
 
-## 🧪 How Prediction Works
-
-```
-Upload X-Ray image
-      ↓
-Convert to RGB
-      ↓
-Resize to 128×128
-      ↓
-Feed raw pixels [0-255] to model
-      ↓
-Model rescales to [-1, 1] internally
-      ↓
-MobileNetV2 feature extraction
-      ↓
-Sigmoid output → single score [0, 1]
-      ↓
-score ≥ 0.5 → PNEUMONIA
-score < 0.5 → NORMAL
-```
-
----
-
-## 📝 Key Technical Decisions
-
-**Why MobileNetV2?**
-Lightweight architecture designed for resource-constrained environments. Fast inference on CPU — no GPU needed for serving.
-
-**Why preprocessing inside the model?**
-Rescaling is built into the model graph so the API receives raw pixels and the model handles normalization internally. This eliminates preprocessing mismatch bugs between training and serving.
-
-**Why threshold 0.5?**
-The official test accuracy of 97.5% was measured using 0.5 as the decision boundary. This is the threshold the model was actually evaluated against.
+**Dataset:**
+- Source: [COVID-19 X-Ray Dataset](https://www.kaggle.com/datasets/khoongweihao/covid19-xray-dataset-train-test-sets)
+- Classes: NORMAL · PNEUMONIA (perfectly balanced 50/50)
+- Train: 119 · Validation: 29 · Test: 40
 
 ---
 
 ## 🏆 Achievements
 - 97.5% test accuracy on held-out test set
-- Production-ready API with input validation, CORS, and logging
-- Fully containerized with Docker Compose
+- Production-ready API with validation, CORS, logging
+- Full CI/CD — push to GitHub → auto deploy
 
 ---
 
 ## 👤 Author
 
-**Omar Ahmed**
+**Omar Ahmed** 
+
 - GitHub: [@Omar75566](https://github.com/Omar75566)
 - LinkedIn: [omar-ahmed-981811324](https://linkedin.com/in/omar-ahmed-981811324)
 - Email: omar.ahmed75566@gmail.com
+- Hugging Face: [Omar75566](https://huggingface.co/Omar75566)

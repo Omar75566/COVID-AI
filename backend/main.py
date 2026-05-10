@@ -16,8 +16,9 @@ app = FastAPI(title="COVID-19 X-Ray Classifier", version="1.0.0")
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:3000,http://0.0.0.0:3000"
+    "http://localhost:5173,http://localhost:3000,https://YOUR_APP.vercel.app"
 ).split(",")
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +28,7 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-MODEL_PATH="./model/model.mobilenet_v2.keras"
+MODEL_PATH="./model.mobilenet_v2.keras"
 try:
     model=tf.keras.models.load_model(MODEL_PATH)
     logger.info("Model loaded successfully")
